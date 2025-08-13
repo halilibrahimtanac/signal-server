@@ -72,5 +72,9 @@ io.on('connection', (socket) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.send('Server çalışıyor 🚀');
+});
+
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => console.log(`Sinyal sunucusu ${PORT} portunda çalışıyor.`));
