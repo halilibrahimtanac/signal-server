@@ -70,6 +70,11 @@ io.on('connection', (socket) => {
     io.emit('online-users-updated', Array.from(onlineUsers.keys()));
     console.log('Online kullanıcılar:', onlineUsers);
   });
+
+  socket.on("new-twish-posted", (newTwishId) => {
+    console.log("New Twish Posted", newTwishId);
+    io.emit("invalidate-twish-list");
+  })
 });
 
 app.get('/', (req, res) => {
