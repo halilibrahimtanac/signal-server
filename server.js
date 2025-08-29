@@ -58,6 +58,13 @@ io.on('connection', (socket) => {
      }
   });
 
+  socket.on('cancel-call', (data) => {
+    const targetSocketId = onlineUsers.get(data.targetUserId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call-cancelled');
+    }
+  });
+
 
   socket.on('disconnect', () => {
     console.log('Bir kullanıcı ayrıldı:', socket.id);
