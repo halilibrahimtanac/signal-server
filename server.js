@@ -12,6 +12,7 @@ const io = new Server(server, {
 });
 
 let onlineUsers = new Map();
+let usersInCall = new Set();
 
 io.on('connection', (socket) => {
   console.log('Bir kullanıcı bağlandı:', socket.id);
@@ -26,23 +27,33 @@ io.on('connection', (socket) => {
     callback({ isOnline: onlineUsers.has(userId) });
   });
 
-  // WebRTC Sinyalleşme Olayları
-  socket.on('call-user', (data) => {
-    const targetSocketId = onlineUsers.get(data.targetUserId);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('incoming-call', {
-        signal: data.signal,
-        from: data.fromUserId
-      });
-    }
-  });
+    socket.on('call-user', (data) => {
+      if (usersInCall.has(data.targetUserId)) {
+        console.log(`Arama denemesi başarısız: ${data.targetUserId} zaten bir görüşmede.`);
+        socket.emit('user-is-busy');
+        return;
+      }
+  
+      const targetSocketId = onlineUsers.get(data.targetUserId);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('incoming-call', {
+          signal: data.signal,
+          from: data.fromUserId
+        });
+      }
+    });
 
-  socket.on('accept-call', (data) => {
-    const targetSocketId = onlineUsers.get(data.targetUserId);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('call-accepted', { signal: data.signal });
-    }
-  });
+    socket.on('accept-call', (data) => {
+      usersInCall.add(data.targetUserId);
+      usersInCall.add(data.fromUserId);
+  
+      console.log('Aktif aramadaki kullanıcılar:', Array.from(usersInCall));
+  
+      const targetSocketId = onlineUsers.get(data.targetUserId);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('call-accepted', { signal: data.signal });
+      }
+    });
   
   socket.on('call-rejected', (data) => {
      const targetSocketId = onlineUsers.get(data.targetUserId);
