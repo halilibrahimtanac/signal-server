@@ -64,6 +64,8 @@ io.on('connection', (socket) => {
   
    socket.on('end-call', (data) => {
      const targetSocketId = onlineUsers.get(data.targetUserId);
+     usersInCall.delete(data.targetUserId);
+     usersInCall.delete(data.userId);
      if(targetSocketId) {
         io.to(targetSocketId).emit('call-ended');
      }
@@ -82,6 +84,7 @@ io.on('connection', (socket) => {
     for (let [userId, socketId] of onlineUsers.entries()) {
       if (socketId === socket.id) {
         onlineUsers.delete(userId);
+        usersInCall.delete(userId);
         break;
       }
     }
