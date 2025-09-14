@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
 import { Server } from "socket.io";
+import { registerDmHandlers, sendPendingDms } from './dmHandler.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -17,17 +18,22 @@ let usersInCall = new Set();
 io.on('connection', (socket) => {
   console.log('Bir kullanıcı bağlandı:', socket.id);
 
+  registerDmHandlers(io, socket, onlineUsers);
+
   socket.on('user-online', (userId) => {
+    socket.userId = userId; 
     onlineUsers.set(userId, socket.id);
     io.emit('online-users-updated', Array.from(onlineUsers.keys()));
     console.log('Online kullanıcılar:', onlineUsers);
+
+    sendPendingDms(io, userId, socket.id);
   });
 
   socket.on('check-user-online', (userId, callback) => {
     callback({ isOnline: onlineUsers.has(userId) });
   });
 
-    socket.on('call-user', (data) => {
+  socket.on('call-user', (data) => {
       if (usersInCall.has(data.targetUserId)) {
         console.log(`Arama denemesi başarısız: ${data.targetUserId} zaten bir görüşmede.`);
         socket.emit('user-is-busy');
@@ -81,12 +87,9 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('Bir kullanıcı ayrıldı:', socket.id);
-    for (let [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        onlineUsers.delete(userId);
-        usersInCall.delete(userId);
-        break;
-      }
+    if (socket.userId) {
+        onlineUsers.delete(socket.userId);
+        usersInCall.delete(socket.userId);
     }
     io.emit('online-users-updated', Array.from(onlineUsers.keys()));
     console.log('Online kullanıcılar:', onlineUsers);
