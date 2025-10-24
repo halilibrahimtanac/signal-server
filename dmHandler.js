@@ -7,7 +7,7 @@ const pendingMessages = new Map();
  * @param {Map<string, string>} onlineUsers
  */
 export function registerDmHandlers(io, socket, onlineUsers) {
-  socket.on('send-dm', ({ toUserId, text }) => {
+  socket.on('send-dm', ({ toUserId, text, message: incomingMessage }) => {
     const fromUserId = socket.userId; 
 
     if (!fromUserId) {
@@ -15,7 +15,8 @@ export function registerDmHandlers(io, socket, onlineUsers) {
       return;
     }
 
-    const message = {
+    // Prefer client-provided persisted message; fallback to generating
+    const message = incomingMessage || {
       id: `${Date.now()}-${fromUserId}-${toUserId}`,
       from: fromUserId,
       to: toUserId,
